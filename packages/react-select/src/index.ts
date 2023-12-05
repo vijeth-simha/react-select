@@ -8,6 +8,8 @@ export { mergeStyles } from './styles';
 export { defaultTheme } from './theme';
 export { createFilter } from './filters';
 export { components } from './components';
+export { default as SelectFunctional } from './SelectFunctional';
+
 export type SelectInstance<
   Option = unknown,
   IsMulti extends boolean = false,
