@@ -7,7 +7,7 @@ import {
   RefCallback,
   TouchEventHandler,
   // MouseEventHandler,
-  // FormEventHandler,
+  FormEventHandler,
 } from 'react';
 // import { MenuPlacer } from './components/Menu';
 // import {
@@ -40,13 +40,13 @@ import {
 } from './styles';
 import { FilterOptionOption } from './filters';
 import { defaultTheme, ThemeConfig } from './theme';
-// import { isAppleDevice } from './accessibility/helpers';
+import { isAppleDevice } from './accessibility/helpers';
 import {
   classNames,
   // cleanValue,
   // isTouchCapable,
   // isMobileDevice,
-  // noop,
+  noop,
   // scrollIntoView,
   // isDocumentElement,
   notNullish,
@@ -55,7 +55,7 @@ import {
   singleValueAsValue,
 } from './utils';
 import { defaultComponents, SelectComponentsConfig } from './components/index';
-// import { DummyInput, ScrollManager } from './internal/index';
+import { DummyInput } from './internal/index';
 
 interface FocusableOptionWithId<Option> {
   data: Option;
@@ -547,10 +547,10 @@ export default function SelectFunctional<
   //   menuListRef.current = ref;
   // };
   // let inputRef: HTMLInputElement | null = null;
-  // const inputRef = React.useRef<HTMLDivElement | null>(null);
-  // const getInputRef: RefCallback<HTMLInputElement> = (ref) => {
-  //   inputRef.current = ref;
-  // };
+  const inputRef = React.useRef<HTMLDivElement | null>(null);
+  const getInputRef: RefCallback<HTMLInputElement> = (ref) => {
+    inputRef.current = ref;
+  };
 
   const buildFocusableOptions = () =>
     buildFocusableOptionsFromCategorizedOptions(
@@ -697,6 +697,18 @@ export default function SelectFunctional<
     //   removedValues: selectValue,
     // });
   };
+  const getElementId = (
+    element:
+      | 'group'
+      | 'input'
+      | 'listbox'
+      | 'option'
+      | 'placeholder'
+      | 'live-region'
+  ) => {
+    return `${selectState.instancePrefix}-${element}`;
+  };
+
   const getCommonProps = () => {
     const { isMulti, isRtl, options } = props;
     return {
@@ -1023,48 +1035,48 @@ export default function SelectFunctional<
     //   focusedValue: selectValue[nextFocus],
     // });
   }
-  // function onMenuOpen() {
-  //   props.onMenuOpen();
-  // }
-  // const handleInputChange: FormEventHandler<HTMLInputElement> = (event) => {
-  //   const { inputValue: prevInputValue } = props;
-  //   const inputValue = event.currentTarget.value;
-  //   // this.setState({ inputIsHiddenAfterUpdate: false });
-  //   onInputChange(inputValue, { action: 'input-change', prevInputValue });
-  //   if (!props.menuIsOpen) {
-  //     onMenuOpen();
-  //   }
-  // };
-  // const onInputBlur: FocusEventHandler<HTMLInputElement> = (event) => {
-  //   const { inputValue: prevInputValue } = props;
-  //   if (menuListRef) {
-  //     inputRef.current!.focus();
-  //     return;
-  //   }
-  //   if (props.onBlur) {
-  //     props.onBlur(event);
-  //   }
-  //   onInputChange('', { action: 'input-blur', prevInputValue });
-  //   onMenuClose();
-  //   // setState({
-  //   //   focusedValue: null,
-  //   //   isFocused: false,
-  //   // });
-  // };
-  // const onInputFocus: FocusEventHandler<HTMLInputElement> = (event) => {
-  //   let openAfterFocus = false;
-  //   if (props.onFocus) {
-  //     props.onFocus(event);
-  //   }
-  //   // setState({
-  //   //   inputIsHiddenAfterUpdate: false,
-  //   //   isFocused: true,
-  //   // });
-  //   if (openAfterFocus || props.openMenuOnFocus) {
-  //     openMenu('first');
-  //   }
-  //   openAfterFocus = false;
-  // };
+  function onMenuOpen() {
+    props.onMenuOpen();
+  }
+  const handleInputChange: FormEventHandler<HTMLInputElement> = (event) => {
+    const { inputValue: prevInputValue } = props;
+    const inputValue = event.currentTarget.value;
+    // this.setState({ inputIsHiddenAfterUpdate: false });
+    onInputChange(inputValue, { action: 'input-change', prevInputValue });
+    if (!props.menuIsOpen) {
+      onMenuOpen();
+    }
+  };
+  const onInputBlur: FocusEventHandler<HTMLInputElement> = (event) => {
+    const { inputValue: prevInputValue } = props;
+    if (menuListRef) {
+      inputRef.current!.focus();
+      return;
+    }
+    if (props.onBlur) {
+      props.onBlur(event);
+    }
+    onInputChange('', { action: 'input-blur', prevInputValue });
+    onMenuClose();
+    // setState({
+    //   focusedValue: null,
+    //   isFocused: false,
+    // });
+  };
+  const onInputFocus: FocusEventHandler<HTMLInputElement> = (event) => {
+    let openAfterFocus = false;
+    if (props.onFocus) {
+      props.onFocus(event);
+    }
+    // setState({
+    //   inputIsHiddenAfterUpdate: false,
+    //   isFocused: true,
+    // });
+    if (openAfterFocus || props.openMenuOnFocus) {
+      openMenu('first');
+    }
+    openAfterFocus = false;
+  };
   const onControlMouseDown = (
     event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
   ) => {
@@ -1103,6 +1115,95 @@ export default function SelectFunctional<
     onControlMouseDown(event);
   };
 
+  function renderInput() {
+    const {
+      isDisabled,
+      isSearchable,
+      inputId,
+      inputValue,
+      tabIndex,
+      form,
+      menuIsOpen,
+      required,
+    } = props;
+    const { Input } = getComponents();
+    const { inputIsHidden, ariaSelection } = selectState;
+    // const { commonProps } = this;
+
+    const id = inputId || getElementId('input');
+
+    // aria attributes makes the JSX "noisy", separated for clarity
+    const ariaAttributes = {
+      'aria-autocomplete': 'list' as const,
+      'aria-expanded': menuIsOpen,
+      'aria-haspopup': true,
+      'aria-errormessage': props['aria-errormessage'],
+      'aria-invalid': props['aria-invalid'],
+      'aria-label': props['aria-label'],
+      'aria-labelledby': props['aria-labelledby'],
+      'aria-required': required,
+      role: 'combobox',
+      'aria-activedescendant': isAppleDevice()
+        ? undefined
+        : selectState.focusedOptionId || '',
+
+      ...(menuIsOpen && {
+        'aria-controls': getElementId('listbox'),
+      }),
+      ...(!isSearchable && {
+        'aria-readonly': true,
+      }),
+      ...(hasValue()
+        ? ariaSelection?.action === 'initial-input-focus' && {
+            'aria-describedby': getElementId('live-region'),
+          }
+        : {
+            'aria-describedby': getElementId('placeholder'),
+          }),
+    };
+
+    if (!isSearchable) {
+      // use a dummy input to maintain focus/blur functionality
+      return (
+        <DummyInput
+          id={id}
+          innerRef={getInputRef}
+          onBlur={onInputBlur}
+          onChange={noop}
+          onFocus={onInputFocus}
+          disabled={isDisabled}
+          tabIndex={tabIndex}
+          inputMode="none"
+          form={form}
+          value=""
+          {...ariaAttributes}
+        />
+      );
+    }
+
+    return (
+      <Input
+        {...commonProps}
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect="off"
+        id={id}
+        innerRef={getInputRef}
+        isDisabled={isDisabled}
+        isHidden={inputIsHidden}
+        onBlur={onInputBlur}
+        onChange={handleInputChange}
+        onFocus={onInputFocus}
+        spellCheck="false"
+        tabIndex={tabIndex}
+        form={form}
+        type="text"
+        value={inputValue}
+        {...ariaAttributes}
+      />
+    );
+  }
+
   const { className, id, isDisabled, menuIsOpen } = props;
   const { isFocused } = selectState;
   const commonProps = getCommonProps();
@@ -1131,11 +1232,18 @@ export default function SelectFunctional<
         menuIsOpen={menuIsOpen}
       >
         <ValueContainer {...commonProps} isDisabled={isDisabled}>
-          <input type="text" />
-          {/* {renderInput()} */}
+          {/* <input type="text" value={def} /> */}
+          {renderInput()}
         </ValueContainer>
       </Control>
       {/* {renderMenu} */}
     </SelectContainer>
   );
 }
+
+
+export type PublicBaseSelectProps<
+  Option,
+  IsMulti extends boolean,
+  Group extends GroupBase<Option>
+> = JSX.LibraryManagedAttributes<typeof SelectFunctional, Props<Option, IsMulti, Group>>;

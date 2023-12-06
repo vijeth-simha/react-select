@@ -8,13 +8,22 @@ export { mergeStyles } from './styles';
 export { defaultTheme } from './theme';
 export { createFilter } from './filters';
 export { components } from './components';
-export { default as SelectFunctional } from './SelectFunctional';
+import SelectFunctional, { Props } from './SelectFunctional';
 
 export type SelectInstance<
   Option = unknown,
   IsMulti extends boolean = false,
   Group extends GroupBase<Option> = GroupBase<Option>
 > = Select<Option, IsMulti, Group>;
+
+export type SelectFunctionalInstance<
+  Option = unknown,
+  IsMulti extends boolean = false,
+  Group extends GroupBase<Option> = GroupBase<Option>
+> = Props<Option, IsMulti, Group>;
+
+export { SelectFunctional };
+
 export type { StateManagerProps as Props } from './useStateManager';
 export { useStateManager };
 
